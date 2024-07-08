@@ -1,0 +1,312 @@
+/*
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
+ */
+package dal;
+
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import model.Department;
+import model.Student;
+import java.sql.Date;
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ *
+ * @author sonng
+ */
+public class StudentDBContext extends DBContext<Student> {
+
+    @Override
+    public ArrayList<Student> all() {
+        ArrayList<Student> students = new ArrayList<>();
+        PreparedStatement stm = null;
+        try {
+            String sql = "SELECT s.sid,s.sname,s.gender,s.dob,d.did,d.dname \n"
+                    + "FROM Student s INNER JOIN Department d ON s.did = d.did";
+            stm = connection.prepareStatement(sql);
+            ResultSet rs = stm.executeQuery();
+            while (rs.next()) {
+                Department d = new Department();
+                d.setId(rs.getInt("did"));
+                d.setName(rs.getString("dname"));
+
+                Student s = new Student();
+                s.setId(rs.getInt("sid"));
+                s.setName(rs.getString("sname"));
+                s.setGender(rs.getBoolean("gender"));
+                s.setDob(rs.getDate("dob"));
+                s.setDept(d);
+                students.add(s);
+            }
+        } catch (SQLException ex) {
+            Logger.getLogger(StudentDBContext.class.getName()).log(Level.SEVERE, null, ex);
+        } finally {
+            try {
+                stm.close();
+                connection.close();
+            } catch (SQLException ex) {
+                Logger.getLogger(DepartmentDBContext.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+        return students;
+    }
+    
+     public ArrayList<Student> search(Integer id, String name, Boolean gender, Date from, Date to, Integer did) {
+        ArrayList<Student> students = new ArrayList<>();
+        PreparedStatement stm = null;
+        try {
+            String sql = "SELECT s.sid,s.sname,s.gender,s.dob,d.did,d.dname \n"
+                    + "FROM Student s INNER JOIN Department d ON s.did = d.did WHERE (1=1) ";
+            
+            int param_index = 0;
+            HashMap<Integer,Object[]> params = new HashMap<>();
+            
+            if(id != null)
+            {
+                sql += " AND [sid] = ? ";
+                param_index++;
+                Object[] param = new Object[2];
+                param[0] = Integer.class.getTypeName();
+                param[1] = id;
+                params.put(param_index, param);
+                
+            }
+            
+            if(name !=null)
+            {
+                sql += " AND sname like '%'+?+'%' ";  
+                param_index++;
+                Object[] param = new Object[2];
+                param[0] = String.class.getTypeName();
+                param[1] = name;
+                params.put(param_index, param);
+            }
+            
+            if(gender !=null)
+            {
+                sql += "  AND gender = ? ";    
+                param_index++;
+                Object[] param = new Object[2];
+                param[0] = Boolean.class.getTypeName();
+                param[1] = gender;
+                params.put(param_index, param);
+            }
+            if(from !=null)
+            {
+                sql += " AND dob >= ? ";
+                param_index++;
+                Object[] param = new Object[2];
+                param[0] = Date.class.getTypeName();
+                param[1] = from;
+                params.put(param_index, param);
+            }
+            if(to !=null)
+            {
+                sql += " AND dob <= ? ";
+                param_index++;
+                Object[] param = new Object[2];
+                param[0] = Date.class.getTypeName();
+                param[1] = to;
+                params.put(param_index, param);
+            }
+            if(did !=null)
+            {
+                sql += " AND d.did = ? ";
+                param_index++;
+                Object[] param = new Object[2];
+                param[0] = Integer.class.getTypeName();
+                param[1] = did;
+                params.put(param_index, param);
+            }
+            
+            
+            
+            stm = connection.prepareStatement(sql);
+            
+            for (Map.Entry<Integer, Object[]> entry : params.entrySet()) {
+                Integer key = entry.getKey();
+                Object[] value = entry.getValue();
+                String type = value[0].toString();
+                if(type.equals(Integer.class.getTypeName()))
+                    stm.setInt(key,   (Integer)value[1]);
+                else if (type.equals(String.class.getTypeName()))
+                    stm.setString(key, value[1].toString());
+                else if (type.equals(Boolean.class.getTypeName()))
+                    stm.setBoolean(key, (Boolean)value[1]);
+                else if (type.equals(Date.class.getTypeName()))
+                    stm.setDate(key, (Date)value[1]);
+            }
+            
+            ResultSet rs = stm.executeQuery();
+            while (rs.next()) {
+                Department d = new Department();
+                d.setId(rs.getInt("did"));
+                d.setName(rs.getString("dname"));
+
+                Student s = new Student();
+                s.setId(rs.getInt("sid"));
+                s.setName(rs.getString("sname"));
+                s.setGender(rs.getBoolean("gender"));
+                s.setDob(rs.getDate("dob"));
+                s.setDept(d);
+                students.add(s);
+            }
+        } catch (SQLException ex) {
+            Logger.getLogger(StudentDBContext.class.getName()).log(Level.SEVERE, null, ex);
+        } finally {
+            try {
+                stm.close();
+                connection.close();
+            } catch (SQLException ex) {
+                Logger.getLogger(DepartmentDBContext.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+        return students;
+     }
+    
+
+    @Override
+    public Student get(int id) {
+        Student s = null;
+        PreparedStatement stm = null;
+        try {
+            String sql = "SELECT s.sid,s.sname,s.gender,s.dob,d.did,d.dname \n"
+                    + "FROM Student s INNER JOIN Department d ON s.did = d.did WHERE s.sid=?";
+            stm = connection.prepareStatement(sql);
+            stm.setInt(1, id);
+            ResultSet rs = stm.executeQuery();
+            if (rs.next()) {
+                Department d = new Department();
+                d.setId(rs.getInt("did"));
+                d.setName(rs.getString("dname"));
+
+                s = new Student();
+                s.setId(rs.getInt("sid"));
+                s.setName(rs.getString("sname"));
+                s.setGender(rs.getBoolean("gender"));
+                s.setDob(rs.getDate("dob"));
+                s.setDept(d);
+            }
+        } catch (SQLException ex) {
+            Logger.getLogger(StudentDBContext.class.getName()).log(Level.SEVERE, null, ex);
+        } finally {
+            try {
+                stm.close();
+                connection.close();
+            } catch (SQLException ex) {
+                Logger.getLogger(DepartmentDBContext.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+        return s;
+    }
+
+    @Override
+    public void insert(Student model) {
+        PreparedStatement stm = null;
+        PreparedStatement stm_query = null;
+        try {
+            connection.setAutoCommit(false);
+            String sql_insert = "INSERT INTO [Student]\n"
+                    + "           ([sname]\n"
+                    + "           ,[dob]\n"
+                    + "           ,[gender]\n"
+                    + "           ,[did])\n"
+                    + "     VALUES\n"
+                    + "           (?\n"
+                    + "           ,?\n"
+                    + "           ,?\n"
+                    + "           ,?)";
+            stm = connection.prepareStatement(sql_insert);
+            stm.setString(1, model.getName());
+            stm.setDate(2, model.getDob());
+            stm.setBoolean(3, model.isGender());
+            stm.setInt(4, model.getDept().getId());
+            stm.executeUpdate();
+
+            String sql_query = "SELECT @@IDENTITY as sid";
+            stm_query = connection.prepareStatement(sql_query);
+            ResultSet rs = stm_query.executeQuery();
+            if (rs.next()) {
+                model.setId(rs.getInt("sid"));
+            }
+
+            connection.commit();
+        } catch (SQLException ex) {
+            try {
+                connection.rollback();
+            } catch (SQLException ex1) {
+                Logger.getLogger(StudentDBContext.class.getName()).log(Level.SEVERE, null, ex1);
+            }
+            Logger.getLogger(StudentDBContext.class.getName()).log(Level.SEVERE, null, ex);
+        } finally {
+            try {
+                connection.setAutoCommit(true);
+                stm.close();
+                connection.close();
+            } catch (SQLException ex) {
+                Logger.getLogger(DepartmentDBContext.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+    }
+
+    @Override
+    public void update(Student model) {
+        PreparedStatement stm = null;
+        try {
+
+            String sql_insert = "UPDATE [Student]\n"
+                    + "   SET [sname] = ?\n"
+                    + "      ,[dob] = ?\n"
+                    + "      ,[gender] = ?\n"
+                    + "      ,[did] = ?\n"
+                    + " WHERE [sid] = ?";
+            stm = connection.prepareStatement(sql_insert);
+            stm.setString(1, model.getName());
+            stm.setDate(2, model.getDob());
+            stm.setBoolean(3, model.isGender());
+            stm.setInt(4, model.getDept().getId());
+            stm.setInt(5, model.getId());
+            stm.executeUpdate();
+
+        } catch (SQLException ex) {
+            Logger.getLogger(StudentDBContext.class.getName()).log(Level.SEVERE, null, ex);
+        } finally {
+            try {
+                stm.close();
+                connection.close();
+            } catch (SQLException ex) {
+                Logger.getLogger(DepartmentDBContext.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+    }
+
+    @Override
+    public void delete(Student model) {
+        PreparedStatement stm = null;
+        try {
+
+            String sql_insert = "DELETE FROM [Student]\n"
+                    + "      WHERE [sid] = ?";
+            stm = connection.prepareStatement(sql_insert);
+            stm.setInt(1, model.getId());
+            stm.executeUpdate();
+
+        } catch (SQLException ex) {
+            Logger.getLogger(StudentDBContext.class.getName()).log(Level.SEVERE, null, ex);
+        } finally {
+            try {
+                stm.close();
+                connection.close();
+            } catch (SQLException ex) {
+                Logger.getLogger(DepartmentDBContext.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+    }
+
+}
